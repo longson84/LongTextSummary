@@ -142,7 +142,7 @@ def summarize_doc(file_path):
 # # store in the Qdrant vector database for further retrieval and application
 # qdrant_client = QdrantClient(
 #     url="https://9240ae44-20ec-436e-b4fd-8ce951d197a3.us-east4-0.gcp.cloud.qdrant.io:6333",
-#     api_key="4sSgvGUXsjevfHbwjKGU8q2Jrhzs6GneX2y11VmjEQXEY3h3HMVf9Q",
+#     api_key="",
 # )
 #
 # qdrant_client.recreate_collection(
