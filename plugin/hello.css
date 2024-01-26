@@ -1,0 +1,39 @@
+/* popup.css */
+body {
+    width: 400px;  /* Set your desired width */
+    height: 6000px; /* Set your desired height */
+
+    /* Add more styling as needed */
+}
+
+#loading-indicator {
+    border: 5px solid #f3f3f3; /* Light grey background */
+    border-top-color: #3498db; /* Blue - initial filled color */
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    position: relative;
+    animation: load-progress 2s linear infinite;
+}
+
+@keyframes load-progress {
+    0% {
+        border-color: #3498db transparent transparent;
+    }
+
+    25% {
+        border-color: #3498db #3498db transparent transparent;
+    }
+
+    50% {
+        border-color: #3498db #3498db #3498db transparent;
+    }
+
+    75% {
+        border-color: #3498db;
+    }
+
+    100% {
+        border-color: #3498db;
+    }
+}
