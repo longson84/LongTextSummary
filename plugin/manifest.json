@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Summarize",
+  "description": "Summarize the current web page",
+  "version": "1.0",
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "action": {
+    "default_popup": "hello.html",
+    "default_icon": "read.png"
+  }
+}
+
