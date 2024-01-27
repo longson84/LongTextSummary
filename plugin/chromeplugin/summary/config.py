@@ -1,2 +1,0 @@
-
-QDRANT_API_KEY = "123456"
