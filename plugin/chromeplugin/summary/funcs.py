@@ -9,6 +9,87 @@ from transformers import pipeline
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 import re
+import config
+
+# Functions to extract the text
+def extract_text_from_url(url):
+    text = trafilatura.fetch_url(url)
+
+    text_to_summarize = trafilatura.extract(text)
+
+    return text_to_summarize
+
+
+def extract_text_from_pdf(file_path):
+    with open(file_path, "rb") as f:
+        reader = pypdf.PdfReader(f)
+        filtered_text = ''
+        number_of_pages = len(reader.pages)
+        print(f"There are total {number_of_pages} pages in the original document")
+
+        for i in range(number_of_pages):
+            page = reader.pages[i]
+            text = page.extract_text()
+            text = re.sub(r'\bSources:.*?\.', '', text, flags=re.IGNORECASE)
+            filtered_text += text + "\n"
+
+    return filtered_text
+
+
+# Functions to extract the text
+
+# Function to split and embed the text
+def embed_text(raw_test):
+    splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=200, length_function=len,
+                                              is_separator_regex=False, separators=[".", ",", ";"])
+
+    docs = splitter.create_documents([raw_test])
+
+    number_of_vectors = len(docs)
+
+    print(f"There are total {number_of_vectors} vectors")
+
+    embeder = Embed4All()
+
+    embedding_map = {}
+
+    for i in range(number_of_vectors):
+        text = docs[i].page_content
+        embedding = embeder.embed(text)
+        embedding_map[text] = embedding
+
+    return embedding_map
+
+
+def save_to_vector_db(embedding_map):
+
+    vectors = list(embedding_map.values())
+    payloads = list(embedding_map.keys())
+
+    number_of_dimensions = len(vectors[0])
+    number_of_vectors = len(vectors)
+
+    qdrant_client = QdrantClient(
+        url="https://9240ae44-20ec-436e-b4fd-8ce951d197a3.us-east4-0.gcp.cloud.qdrant.io:6333",
+        api_key=config.QDRANT_API_KEY,
+    )
+
+    qdrant_client.recreate_collection(
+        collection_name="text_to_summarize",
+        vectors_config=models.VectorParams(
+            size=number_of_dimensions, distance=models.Distance.COSINE
+
+        )
+    )
+
+    ids = [i + 1 for i in range(number_of_vectors)]
+
+    qdrant_client.upsert(collection_name="text_to_summarize",
+                         points=models.Batch(
+                             ids=ids,
+                             payloads=payloads,
+                             vectors=vectors,
+                         ))
 
 
 def find_elbow_point(embedded_vectors, min_k=3, max_k=15):
@@ -52,47 +133,8 @@ def closest_vectors_with_text(vector_dict, num_clusters):
     return closest
 
 
-def extract_text_from_pdf(file_path):
-    with open(file_path, "rb") as f:
-        reader = pypdf.PdfReader(f)
-        filtered_text = ''
-        number_of_pages = len(reader.pages)
-        print(f"There are total {number_of_pages} pages in the original document")
-
-        for i in range(number_of_pages):
-            page = reader.pages[i]
-            text = page.extract_text()
-            text = re.sub(r'\bSources:.*?\.', '', text, flags=re.IGNORECASE)
-            filtered_text += text + "\n"
-
-    return filtered_text
-
-
-def embed_text(raw_test):
-
-    splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=200, length_function=len,
-                                              is_separator_regex=False, separators=[".", ",", ";"])
-
-    docs = splitter.create_documents([raw_test])
-
-    number_of_vectors = len(docs)
-
-    print(f"There are total {number_of_vectors} vectors")
-
-    embeder = Embed4All()
-
-    embedding_map = {}
-
-    for i in range(number_of_vectors):
-        text = docs[i].page_content
-        embedding = embeder.embed(text)
-        embedding_map[text] = embedding
-
-    return embedding_map
-
-
-def summarize(texts, one_by_one=True):
-    summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
+def summarize(texts, one_by_one=True, model="facebook/bart-large-cnn"):
+    summarizer = pipeline("summarization", model=model)
 
     summaries = []
     if one_by_one:
@@ -146,10 +188,7 @@ def summarize_long_text(text):
 
 
 def summarize_url(url):
-
-    text = trafilatura.fetch_url(url)
-
-    text_to_summarize = trafilatura.extract(text)
+    text_to_summarize = extract_text_from_url(url)
 
     summary = summarize_long_text(text_to_summarize)
 
@@ -163,3 +202,6 @@ def summarize_pdf(file_path):
 
     # Step 1: Summarize
     return summarize_long_text(raw_text)
+
+
+# store in the Qdrant vector database for further retrieval and application
