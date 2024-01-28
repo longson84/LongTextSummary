@@ -14,7 +14,7 @@ function showLoadingIndicator() {
 function hideLoadingIndicator() {
   loading.style.display = "none";
   submitButton.disabled = false;
-  summarizing.style.display = "none";
+  // summarizing.style.display = "none";
   stopButton.style.display = "none";
 }
 
@@ -42,7 +42,8 @@ submitButton.addEventListener("click", function () {
       .then((res) => res.json())
       .then((data) => {
         // Step 3: receive the result and display it
-        document.getElementById("summary").innerText = data.result;
+        summarizing.style.display = "block";
+        summarizing.innerText = data.result;
       })
       .catch((err) => console.log("Error: ", err))
       .finally(() => {
